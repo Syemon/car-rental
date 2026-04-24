@@ -1,5 +1,6 @@
 package com.syemon.car_rental;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ReserveCarUseCase {
 
     private static final List<ReservationStatus> BLOCKING_STATUSES =
@@ -15,14 +17,6 @@ public class ReserveCarUseCase {
     private final CarRepository carRepository;
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
-
-    public ReserveCarUseCase(CarRepository carRepository,
-                             ReservationRepository reservationRepository,
-                             UserRepository userRepository) {
-        this.carRepository = carRepository;
-        this.reservationRepository = reservationRepository;
-        this.userRepository = userRepository;
-    }
 
     @Transactional
     public ReservationResponse createReservation(UUID userId, ReservationRequest request) {
@@ -41,6 +35,12 @@ public class ReserveCarUseCase {
                     "No " + request.requestedType() + " available for the requested time range");
         }
 
+        Reservation reservation = createReservation(request, user);
+
+        return ReservationResponse.fromEntity(reservationRepository.save(reservation));
+    }
+
+    private static Reservation createReservation(ReservationRequest request, User user) {
         Reservation reservation = new Reservation();
         reservation.setUser(user);
         reservation.setRequestedType(request.requestedType());
@@ -48,7 +48,6 @@ public class ReserveCarUseCase {
         reservation.setStartTime(request.startTime());
         reservation.setExpectedEndTime(request.expectedEndTime());
         reservation.setStatus(ReservationStatus.CONFIRMED);
-
-        return ReservationResponse.fromEntity(reservationRepository.save(reservation));
+        return reservation;
     }
 }
