@@ -25,7 +25,10 @@ public class ReserveCarUseCase {
     }
 
     @Transactional
-    public Reservation createReservation(UUID userId, ReservationRequest request) {
+    public ReservationResponse createReservation(UUID userId, ReservationRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Unknown user: " + userId));
+
         boolean hasCapacity = carRepository.hasAvailableCapacity(
                 request.requestedType(),
                 request.startTime(),
@@ -38,18 +41,14 @@ public class ReserveCarUseCase {
                     "No " + request.requestedType() + " available for the requested time range");
         }
 
-        User managedUser = userRepository.findById(userId).orElseThrow(
-                () -> new UserNotFoundException("User not found")
-        );
-
         Reservation reservation = new Reservation();
-        reservation.setUser(managedUser);
+        reservation.setUser(user);
         reservation.setRequestedType(request.requestedType());
-        reservation.setAssignedCar(null);
+        reservation.setAssignedCar(null); // Assigned later
         reservation.setStartTime(request.startTime());
         reservation.setExpectedEndTime(request.expectedEndTime());
         reservation.setStatus(ReservationStatus.CONFIRMED);
 
-        return reservationRepository.save(reservation);
+        return ReservationResponse.fromEntity(reservationRepository.save(reservation));
     }
 }

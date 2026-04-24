@@ -22,15 +22,13 @@ public class ReservationController {
     private final UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<Reservation> createReservation(
+    public ResponseEntity<ReservationResponse> createReservation(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody ReservationRequest request
     ) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("Unknown user: " + userId));
 
-        Reservation reservation = reserveCarUseCase.createReservation(userId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(reservation);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(reserveCarUseCase.createReservation(userId, request));
     }
 }

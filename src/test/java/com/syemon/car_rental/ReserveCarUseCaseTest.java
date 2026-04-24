@@ -35,20 +35,25 @@ class ReserveCarUseCaseTest {
         User user = user();
         ReservationRequest request = request();
 
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(carRepository.hasAvailableCapacity(
                 eq(request.requestedType()),
                 eq(request.startTime()),
                 eq(request.expectedEndTime()),
                 eq(BLOCKING_STATUSES)
         )).thenReturn(true);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        
+        when(reservationRepository.save(any())).thenAnswer(inv -> {
+            Reservation r = inv.getArgument(0);
+            r.setId(UUID.randomUUID()); // Simulate DB assigning an ID
+            return r;
+        });
 
-        Reservation result = reserveCarUseCase.createReservation(user.getId(), request);
+        ReservationResponse result = reserveCarUseCase.createReservation(user.getId(), request);
 
-        assertThat(result.getAssignedCar()).isNull();
-        assertThat(result.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
-        assertThat(result.getRequestedType()).isEqualTo(CarType.SEDAN);
+        assertThat(result.id()).isNotNull();
+        assertThat(result.status()).isEqualTo(ReservationStatus.CONFIRMED);
+        assertThat(result.carType()).isEqualTo(CarType.SEDAN);
         verify(reservationRepository).save(any(Reservation.class));
     }
 
@@ -57,13 +62,14 @@ class ReserveCarUseCaseTest {
         User user = user();
         ReservationRequest request = request();
 
+        // Now we need to stub the user first since it happens first in the use case!
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(carRepository.hasAvailableCapacity(any(), any(), any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> reserveCarUseCase.createReservation(user.getId(), request))
                 .isInstanceOf(NoCarAvailableException.class);
 
         verify(reservationRepository, never()).save(any());
-        verify(userRepository, never()).findById(any());
     }
 
     @Test
@@ -71,12 +77,13 @@ class ReserveCarUseCaseTest {
         UUID userId = UUID.randomUUID();
         ReservationRequest request = request();
 
-        when(carRepository.hasAvailableCapacity(any(), any(), any(), any())).thenReturn(true);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> reserveCarUseCase.createReservation(userId, request))
-                .isInstanceOf(UserNotFoundException.class);
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining("Unknown user");
 
+        verify(carRepository, never()).hasAvailableCapacity(any(), any(), any(), any());
         verify(reservationRepository, never()).save(any());
     }
 
