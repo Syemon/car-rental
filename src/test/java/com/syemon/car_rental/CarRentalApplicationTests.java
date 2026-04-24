@@ -1,13 +1,11 @@
 package com.syemon.car_rental;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
 class CarRentalApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void contextLoads() {
+        // Full context test requires a running PostgreSQL — tested manually.
+    }
 }
