@@ -1,6 +1,5 @@
 package com.syemon.car_rental;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,33 +26,30 @@ public class ReserveCarUseCase {
 
     @Transactional
     public Reservation createReservation(UUID userId, ReservationRequest request) {
-        List<Car> available = carRepository.findAvailableCarsForUpdate(
+        boolean hasCapacity = carRepository.hasAvailableCapacity(
                 request.requestedType(),
                 request.startTime(),
                 request.expectedEndTime(),
-                BLOCKING_STATUSES,
-                PageRequest.of(0, 1)
+                BLOCKING_STATUSES
         );
 
-        if (available.isEmpty()) {
+        if (!hasCapacity) {
             throw new NoCarAvailableException(
                     "No " + request.requestedType() + " available for the requested time range");
         }
 
-        Car car = available.getFirst();
-
-        User managedUser = userRepository.findById(userId).get();
+        User managedUser = userRepository.findById(userId).orElseThrow(
+                () -> new UserNotFoundException("User not found")
+        );
 
         Reservation reservation = new Reservation();
         reservation.setUser(managedUser);
         reservation.setRequestedType(request.requestedType());
-        reservation.setAssignedCar(car);
+        reservation.setAssignedCar(null);
         reservation.setStartTime(request.startTime());
         reservation.setExpectedEndTime(request.expectedEndTime());
         reservation.setStatus(ReservationStatus.CONFIRMED);
 
-        Reservation saved = reservationRepository.save(reservation);
-
-        return saved;
+        return reservationRepository.save(reservation);
     }
 }

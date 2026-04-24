@@ -16,14 +16,14 @@ public class Reservation {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
     @Enumerated(EnumType.STRING)
     private CarType requestedType;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne
     @JoinColumn(name = "assigned_car_id")
     private Car assignedCar;
 

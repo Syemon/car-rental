@@ -5,7 +5,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -32,39 +31,51 @@ class ReserveCarUseCaseTest {
             List.of(ReservationStatus.CONFIRMED, ReservationStatus.ACTIVE);
 
     @Test
-    void happyPath_reservationSavedWithAssignedCarAndConfirmedStatus() {
+    void shouldCreateReservationWithNullCarAndConfirmedStatus_whenCapacityIsAvailable() {
         User user = user();
-        Car car = car();
         ReservationRequest request = request();
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(carRepository.findAvailableCarsForUpdate(
+        when(carRepository.hasAvailableCapacity(
                 eq(request.requestedType()),
                 eq(request.startTime()),
                 eq(request.expectedEndTime()),
-                eq(BLOCKING_STATUSES),
-                eq(PageRequest.of(0, 1))
-        )).thenReturn(List.of(car));
+                eq(BLOCKING_STATUSES)
+        )).thenReturn(true);
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Reservation result = reserveCarUseCase.createReservation(user.getId(), request);
 
-        assertThat(result.getAssignedCar()).isEqualTo(car);
+        assertThat(result.getAssignedCar()).isNull();
         assertThat(result.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
         assertThat(result.getRequestedType()).isEqualTo(CarType.SEDAN);
         verify(reservationRepository).save(any(Reservation.class));
     }
 
     @Test
-    void noAvailability_throwsNoCarAvailableException_saveNeverCalled() {
+    void shouldThrowNoCarAvailableException_whenCapacityIsNotAvailable() {
         User user = user();
         ReservationRequest request = request();
 
-        when(carRepository.findAvailableCarsForUpdate(any(), any(), any(), any(), any()))
-                .thenReturn(List.of());
+        when(carRepository.hasAvailableCapacity(any(), any(), any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> reserveCarUseCase.createReservation(user.getId(), request))
                 .isInstanceOf(NoCarAvailableException.class);
+
+        verify(reservationRepository, never()).save(any());
+        verify(userRepository, never()).findById(any());
+    }
+
+    @Test
+    void shouldThrowUserNotFoundException_whenUserDoesNotExist() {
+        UUID userId = UUID.randomUUID();
+        ReservationRequest request = request();
+
+        when(carRepository.hasAvailableCapacity(any(), any(), any(), any())).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reserveCarUseCase.createReservation(userId, request))
+                .isInstanceOf(UserNotFoundException.class);
 
         verify(reservationRepository, never()).save(any());
     }
@@ -75,14 +86,6 @@ class ReserveCarUseCaseTest {
         u.setName("Alice");
         u.setEmail("alice@example.com");
         return u;
-    }
-
-    private Car car() {
-        Car c = new Car();
-        c.setId(UUID.randomUUID());
-        c.setType(CarType.SEDAN);
-        c.setLicensePlate("SED-001");
-        return c;
     }
 
     private ReservationRequest request() {
