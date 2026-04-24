@@ -1,11 +1,15 @@
 package com.syemon.car_rental;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
+@Getter
+@Setter
 public class Reservation {
 
     @Id
@@ -28,18 +32,4 @@ public class Reservation {
 
     @Enumerated(EnumType.STRING)
     private ReservationStatus status;
-
-    public UUID getId() { return id; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public CarType getRequestedType() { return requestedType; }
-    public void setRequestedType(CarType requestedType) { this.requestedType = requestedType; }
-    public Car getAssignedCar() { return assignedCar; }
-    public void setAssignedCar(Car assignedCar) { this.assignedCar = assignedCar; }
-    public Instant getStartTime() { return startTime; }
-    public void setStartTime(Instant startTime) { this.startTime = startTime; }
-    public Instant getExpectedEndTime() { return expectedEndTime; }
-    public void setExpectedEndTime(Instant expectedEndTime) { this.expectedEndTime = expectedEndTime; }
-    public ReservationStatus getStatus() { return status; }
-    public void setStatus(ReservationStatus status) { this.status = status; }
 }

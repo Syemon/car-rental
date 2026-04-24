@@ -1,11 +1,15 @@
 package com.syemon.car_rental;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
 @Entity
 @Table(name = "car")
+@Getter
+@Setter
 public class Car {
 
     @Id
@@ -20,12 +24,4 @@ public class Car {
 
     @Version
     private int version;
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public CarType getType() { return type; }
-    public void setType(CarType type) { this.type = type; }
-    public String getLicensePlate() { return licensePlate; }
-    public void setLicensePlate(String licensePlate) { this.licensePlate = licensePlate; }
-    public int getVersion() { return version; }
 }

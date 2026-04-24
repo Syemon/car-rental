@@ -5,9 +5,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
-public class ReservationService {
+public class ReserveCarUseCase {
 
     private static final List<ReservationStatus> BLOCKING_STATUSES =
             List.of(ReservationStatus.CONFIRMED, ReservationStatus.ACTIVE);
@@ -16,16 +17,16 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
 
-    public ReservationService(CarRepository carRepository,
-                              ReservationRepository reservationRepository,
-                              UserRepository userRepository) {
+    public ReserveCarUseCase(CarRepository carRepository,
+                             ReservationRepository reservationRepository,
+                             UserRepository userRepository) {
         this.carRepository = carRepository;
         this.reservationRepository = reservationRepository;
         this.userRepository = userRepository;
     }
 
     @Transactional
-    public Reservation createReservation(User user, ReservationRequest request) {
+    public Reservation createReservation(UUID userId, ReservationRequest request) {
         List<Car> available = carRepository.findAvailableCarsForUpdate(
                 request.requestedType(),
                 request.startTime(),
@@ -41,7 +42,7 @@ public class ReservationService {
 
         Car car = available.getFirst();
 
-        User managedUser = userRepository.findById(user.getId()).get();
+        User managedUser = userRepository.findById(userId).get();
 
         Reservation reservation = new Reservation();
         reservation.setUser(managedUser);

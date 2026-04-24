@@ -1,6 +1,7 @@
 package com.syemon.car_rental;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,16 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/reservations")
+@RequestMapping("/api/v1/reservations")
+@RequiredArgsConstructor
 public class ReservationController {
 
-    private final ReservationService reservationService;
+    private final ReserveCarUseCase reserveCarUseCase;
     private final UserRepository userRepository;
-
-    public ReservationController(ReservationService reservationService, UserRepository userRepository) {
-        this.reservationService = reservationService;
-        this.userRepository = userRepository;
-    }
 
     @PostMapping
     public ResponseEntity<Reservation> createReservation(
@@ -30,10 +27,10 @@ public class ReservationController {
             @Valid @RequestBody ReservationRequest request
     ) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("Unknown principal: " + userId));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Unknown user: " + userId));
 
-        Reservation reservation = reservationService.createReservation(user, request);
+        Reservation reservation = reserveCarUseCase.createReservation(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(reservation);
     }
 }

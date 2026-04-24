@@ -19,13 +19,14 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ReservationServiceTest {
+class ReserveCarUseCaseTest {
 
     @Mock CarRepository carRepository;
     @Mock ReservationRepository reservationRepository;
     @Mock UserRepository userRepository;
 
-    @InjectMocks ReservationService reservationService;
+    @InjectMocks
+    ReserveCarUseCase reserveCarUseCase;
 
     private static final List<ReservationStatus> BLOCKING_STATUSES =
             List.of(ReservationStatus.CONFIRMED, ReservationStatus.ACTIVE);
@@ -46,7 +47,7 @@ class ReservationServiceTest {
         )).thenReturn(List.of(car));
         when(reservationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        Reservation result = reservationService.createReservation(user, request);
+        Reservation result = reserveCarUseCase.createReservation(user.getId(), request);
 
         assertThat(result.getAssignedCar()).isEqualTo(car);
         assertThat(result.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
@@ -62,7 +63,7 @@ class ReservationServiceTest {
         when(carRepository.findAvailableCarsForUpdate(any(), any(), any(), any(), any()))
                 .thenReturn(List.of());
 
-        assertThatThrownBy(() -> reservationService.createReservation(user, request))
+        assertThatThrownBy(() -> reserveCarUseCase.createReservation(user.getId(), request))
                 .isInstanceOf(NoCarAvailableException.class);
 
         verify(reservationRepository, never()).save(any());
